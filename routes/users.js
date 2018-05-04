@@ -7,8 +7,7 @@ var LocalStrategy = require('passport-local').Strategy;
 var User = require('../models/user.js');
 
 
-router.use(passport.initialize());
-router.use(passport.session());
+
 
 router.get('/success', (req, res) => res.send("Welcome "+req.query.username+"!!"));
 router.get('/error', (req, res) => res.send("error logging in"));
@@ -111,55 +110,21 @@ router.post('/register', function(req, res, next){
 
 });
 
+passport.serializeUser(function(user, done){
+  done(null, user.id);
+
+});
+
+passport.deserializeUser(function(id, done){
+  User.getUserById(id, function(err, user){
+    done(err, user);
+  });
+});
 
 
-// passport.use(new LocalStrategy(
-//   function(username, password, cb) {
-//     User.getUserByUsername(username, function(err, user) {
-//       if (err) { return cb(err); }
-//       if (!user) { console.log('Unknown User'); return cb(null, false); }
-//       if (user.password != password) { return cb(null, false); }
-//       return cb(null, user);
-//     });
-//   }));
 
 
-passport.use(new LocalStrategy(
-  function(username, password, done) {
-      User.findOne({
-        username: username
-      }, function(err, user) {
-        console.log('here');
-        if (err) {
-          console.log('her1');
-          return done(err);
-        }
 
-        if (!user) {
-          console.log('her2');
-          return done(null, false);
-        }
-
-        if (user.password != password) {
-          return done(null, false);
-        }
-        return done(null, user);
-      });
-  }
-));
-
-// passport.use(new (
-//   function(username, password, done){
-//     console.log('here');
-//     User.getUserByUsername(username, function(err, user){
-//       if(err) throw err;
-//       if(!user){
-//         console.log('Unknown User');
-//         return done(null, false, {message: 'Unknown User'});
-//       }
-//     })
-//   }
-// ) );
 
 
 
@@ -169,11 +134,37 @@ router.get('/login', function(req, res, next){
   })
 })
 
-router.post('/login', 
-passport.authenticate('local', { failureRedirect: '/error' }),
-function(req, res) {
-  console.log('redirect');
-  
-  res.redirect('/');
+
+passport.use(new LocalStrategy(
+    function(username, password, done){
+      User.getUserByUsername(username, function(err, user){
+        if(err) throw err;
+        if(!user){
+          console.log('Unknown User');
+          return done(null, false, {message: 'unknown User'});
+          
+        }
+
+        User.comparePassword(password, user.password, function(err, isMatch){
+            if(err) throw err;
+            if(isMatch){
+              return done(null, user);
+            }else{
+              console.log('Invalid password');
+              done(null, false, {message : 'Invalid Password'});
+            }
+        });
+      })
+
+    }
+
+))
+
+router.post('/login', passport.authenticate('local', {failureRedirect : '/users/login', failureFlash : 'Invalid username or password'}), function(req ,res){
+    console.log('Authentication Successful');
+    req.flash('success' , 'You are logged in');
+    res.redirect('/');
+
 });
+
 module.exports = router;
