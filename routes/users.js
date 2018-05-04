@@ -12,15 +12,15 @@ var User = require('../models/user.js');
 router.get('/success', (req, res) => res.send("Welcome "+req.query.username+"!!"));
 router.get('/error', (req, res) => res.send("error logging in"));
 
-passport.serializeUser(function(user, cb) {
-  cb(null, user.id);
-});
+// passport.serializeUser(function(user, cb) {
+//   cb(null, user.id);
+// });
 
-passport.deserializeUser(function(id, cb) {
-  User.findById(id, function(err, user) {
-    cb(err, user);
-  });
-});
+// passport.deserializeUser(function(id, cb) {
+//   User.findById(id, function(err, user) {
+//     cb(err, user);
+//   });
+// });
 
 
 /* GET users listing. */
@@ -166,5 +166,11 @@ router.post('/login', passport.authenticate('local', {failureRedirect : '/users/
     res.redirect('/');
 
 });
+
+router.get('/logout', function(req, res){
+  req.logout();
+  req.flash('success', 'You Have Logged out');
+  res.redirect('/users/login');
+})
 
 module.exports = router;
